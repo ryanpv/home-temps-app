@@ -17,6 +17,8 @@ GLOBAL_NUMBER_OF_DAYS = "SELECT COUNT(DISTINCT DATE(date)) AS days FROM temperat
 
 GLOBAL_AVG = "SELECT AVG(temperature) as average FROM temperatures;"
 
+GET_ALL_TEMPS = "SELECT temperatures.*, rooms.name FROM temperatures JOIN rooms ON temperature.room_id=rooms.id;"
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -39,6 +41,24 @@ def create_room():
     print(e)
     return
   
+# Get all room temperatures
+@app.get("/api/temperature")
+def get_temps():
+  try:
+    with connection:
+      with connection.cursor() as cursor:
+        cursor.execute(GET_ALL_TEMPS)
+        rows = cursor.fetchall()
+        print('rows: ', rows)
+    return { "temps_list": "returned" }
+  except ValueError as e:
+    print("GET /api/temperature ERROR:", e)
+    return { "message": "GET /api/temperature ERROR:" }
+  except Exception as e:
+    print("exceptioN: ", e)
+    return 
+  
+# Add temperatures of rooms
 @app.post("/api/temperature")
 def add_temp():
   data = request.get_json()
