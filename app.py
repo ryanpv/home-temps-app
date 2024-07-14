@@ -1,8 +1,9 @@
 import os
 import psycopg2
 from datetime import datetime, timezone
+from pprint import pprint
 from psycopg2 import pool
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 
 CREATE_ROOMS_TABLE = "CREATE TABLE IF NOT EXISTS rooms (id SERIAL PRIMARY KEY, name TEXT);"
@@ -17,7 +18,10 @@ GLOBAL_NUMBER_OF_DAYS = "SELECT COUNT(DISTINCT DATE(date)) AS days FROM temperat
 
 GLOBAL_AVG = "SELECT AVG(temperature) as average FROM temperatures;"
 
-GET_ALL_TEMPS = "SELECT temperatures.*, rooms.name FROM temperatures JOIN rooms ON temperature.room_id=rooms.id;"
+GET_ALL_TEMPS = """SELECT temperatures.*, rooms.name 
+                    FROM temperatures 
+                    JOIN rooms 
+                    ON temperatures.room_id=rooms.id;"""
 
 load_dotenv()
 
@@ -49,14 +53,15 @@ def get_temps():
       with connection.cursor() as cursor:
         cursor.execute(GET_ALL_TEMPS)
         rows = cursor.fetchall()
-        print('rows: ', rows)
-    return { "temps_list": "returned" }
+        pprint(rows)
+    return jsonify({ "temperatures": rows })
+    # return 'success'
   except ValueError as e:
     print("GET /api/temperature ERROR:", e)
     return { "message": "GET /api/temperature ERROR:" }
   except Exception as e:
     print("exceptioN: ", e)
-    return 
+    return "Exception error"
   
 # Add temperatures of rooms
 @app.post("/api/temperature")
