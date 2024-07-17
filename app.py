@@ -23,12 +23,32 @@ GET_ALL_TEMPS = """SELECT temperatures.*, rooms.name
                     JOIN rooms 
                     ON temperatures.room_id=rooms.id;"""
 
+GET_ROOM_TEMP = """SELECT temperatures.*, rooms.name
+                  FROM temperatures
+                  JOIN rooms
+                  ON temperatures.room_id=rooms.id
+                  WHERE rooms.id = (%s);"""
+
 load_dotenv()
 
 app = Flask(__name__)
 DATABASE_URL = os.getenv('DATABASE_URL')
 # connection_pool = pool.SimpleConnectionPool(1, 20, DATABASE_URL)
 connection = psycopg2.connect(DATABASE_URL)
+
+@app.get("/api/room/<room_id>")
+def get_room(room_id):
+  try:
+    with connection:
+      with connection.cursor() as cursor:
+        cursor.execute(GET_ROOM_TEMP, (room_id,))
+        room = cursor.fetchone()
+        print(room)
+
+        return { "room": room }, 200
+  except ValueError as e:
+    print(e)
+    return "No room id found"
 
 @app.post("/api/room")
 def create_room():
