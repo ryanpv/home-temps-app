@@ -3,6 +3,7 @@ import psycopg2
 from datetime import datetime, timezone
 from pprint import pprint
 from psycopg2 import pool
+from psycopg2.extras import DictCursor
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 
@@ -40,10 +41,11 @@ connection = psycopg2.connect(DATABASE_URL)
 def get_room(room_id):
   try:
     with connection:
-      with connection.cursor() as cursor:
+      with connection.cursor(cursor_factory=DictCursor) as cursor:
         cursor.execute(GET_ROOM_TEMP, (room_id,))
         room = cursor.fetchone()
-        print(room)
+        
+        print(room['name'], room['temperature'])
 
         return { "room": room }, 200
   except ValueError as e:
