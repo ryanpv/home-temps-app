@@ -43,20 +43,24 @@ room_service = RoomService(DATABASE_URL)
 room_bp = Blueprint('room', __name__)
 
 
-@app.get("/api/room/<room_id>")
+@room_bp.route("/api/room/<room_id>", methods=["GET"])
 def get_room(room_id):
-  try:
-    with connection:
-      with connection.cursor(cursor_factory=DictCursor) as cursor:
-        cursor.execute(GET_ROOM_TEMP, (room_id,))
-        room = cursor.fetchone()
+  room = room_service.get_room(room_id)
+  if room:
+    return jsonify(room.dict_format())
+  return jsonify({ 'error': 'Room does not exist' }), 404
+  # try:
+  #   with connection:
+  #     with connection.cursor(cursor_factory=DictCursor) as cursor:
+  #       cursor.execute(GET_ROOM_TEMP, (room_id,))
+  #       room = cursor.fetchone()
         
-        print(room['name'], room['temperature'])
+  #       print(room['name'], room['temperature'])
 
-        return { "room": room }, 200
-  except ValueError as e:
-    print(e)
-    return "No room id found"
+  #       return { "room": room }, 200
+  # except ValueError as e:
+  #   print(e)
+  #   return "No room id found"
 
 @app.post("/api/room")
 def create_room():
@@ -116,14 +120,20 @@ def add_temp():
   return { "message": "Temperature added." }, 201
 
 @app.get('/api/average')
-def global_avg():
-  with connection: # 'with' to automatically close connection
-    with connection.cursor() as cursor: # best practice to also close cursor to ensure freeing unused resources
-      cursor.execute(GLOBAL_AVG)
-      average = cursor.fetchone()[0]
-      cursor.execute(GLOBAL_NUMBER_OF_DAYS)
-      days = cursor.fetchone()[0]
-  return {"average": round(average, 2), "days": days}
+def get_global_average():
+  average = room_service.get_average()
+  if average:
+    return average
+  return None
+# def global_avg():
+#   with connection: # 'with' to automatically close connection
+#     with connection.cursor() as cursor: # best practice to also close cursor to ensure freeing unused resources
+#       cursor.execute(GLOBAL_AVG)
+#       average = cursor.fetchone()[0]
+#       cursor.execute(GLOBAL_NUMBER_OF_DAYS)
+#       days = cursor.fetchone()[0]
+#   return {"average": round(average, 2), "days": days}
+
 
 @app.get("/")
 def home():
