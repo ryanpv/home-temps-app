@@ -4,8 +4,12 @@ from datetime import datetime, timezone
 from pprint import pprint
 from psycopg2 import pool
 from psycopg2.extras import DictCursor
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Blueprint
 from dotenv import load_dotenv
+
+
+
+from services import RoomService
 
 CREATE_ROOMS_TABLE = "CREATE TABLE IF NOT EXISTS rooms (id SERIAL PRIMARY KEY, name TEXT);"
 CREATE_TEMPS_TABLE = """CREATE TABLE IF NOT EXISTS temperatures (room_id INTEGER, temperature REAL,
@@ -31,11 +35,13 @@ GET_ROOM_TEMP = """SELECT temperatures.*, rooms.name
                   WHERE rooms.id = (%s);"""
 
 load_dotenv()
-
 app = Flask(__name__)
 DATABASE_URL = os.getenv('DATABASE_URL')
 # connection_pool = pool.SimpleConnectionPool(1, 20, DATABASE_URL)
 connection = psycopg2.connect(DATABASE_URL)
+room_service = RoomService(DATABASE_URL)
+room_bp = Blueprint('room', __name__)
+
 
 @app.get("/api/room/<room_id>")
 def get_room(room_id):
@@ -68,22 +74,26 @@ def create_room():
     return
   
 # Get all room temperatures
-@app.get("/api/temperature")
-def get_temps():
-  try:
-    with connection:
-      with connection.cursor() as cursor:
-        cursor.execute(GET_ALL_TEMPS)
-        rows = cursor.fetchall()
-        pprint(rows)
-    return jsonify({ "temperatures": rows })
-    # return 'success'
-  except ValueError as e:
-    print("GET /api/temperature ERROR:", e)
-    return { "message": "GET /api/temperature ERROR:" }
-  except Exception as e:
-    print("exceptioN: ", e)
-    return "Exception error"
+
+@room_bp.route("/api/temperature", methods=['GET'])
+def get_all_temps():
+  rooms = room_service.get_all_rooms()
+  return jsonify([room.dict_format() for room in rooms])
+# def get_temps():
+#   try:
+#     with connection:
+#       with connection.cursor() as cursor:
+#         cursor.execute(GET_ALL_TEMPS)
+#         rows = cursor.fetchall()
+#         pprint(rows)
+#     return jsonify({ "temperatures": rows })
+#     # return 'success'
+#   except ValueError as e:
+#     print("GET /api/temperature ERROR:", e)
+#     return { "message": "GET /api/temperature ERROR:" }
+#   except Exception as e:
+#     print("exceptioN: ", e)
+#     return "Exception error"
   
 # Add temperatures of rooms
 @app.post("/api/temperature")
@@ -118,3 +128,5 @@ def global_avg():
 @app.get("/")
 def home():
   return "Hello World!"
+
+app.register_blueprint(room_bp)
