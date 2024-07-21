@@ -15,6 +15,13 @@ GET_ROOM_TEMP = """SELECT temperatures.temperature, rooms.*
 GLOBAL_AVG = "SELECT AVG(temperature) as average FROM temperatures;"
 GLOBAL_NUMBER_OF_DAYS = "SELECT COUNT(DISTINCT DATE(date)) AS days FROM temperatures;"
 
+CREATE_ROOMS_TABLE = "CREATE TABLE IF NOT EXISTS rooms (id SERIAL PRIMARY KEY, name TEXT);"
+
+INSERT_ROOM_RETURN_ID = "INSERT INTO rooms (name) VALUES (%s) RETURNING id;"
+INSERT_TEMP = "INSERT INTO temperatures (room_id, temperature, date) VALUES (%s, %s, %s);"
+
+
+
 class RoomService:
   def __init__(self, db_config):
     self.connection = psycopg2.connect(db_config)
@@ -47,3 +54,18 @@ class RoomService:
       cursor.execute(GLOBAL_NUMBER_OF_DAYS)
       days = cursor.fetchone()[0]
     return { "average": round(average, 2), "days": days }
+  
+  # add new room
+  def add_room(self, name, temperature=None):
+    try:
+      with self.connection.cursor() as cursor:
+        cursor.execute(CREATE_ROOMS_TABLE)
+        cursor.execute(INSERT_ROOM_RETURN_ID, (name,))
+        room_id = cursor.fetchone()[0]
+      self.connection.commit()
+      return Room(room_id, name, temperature)
+    except Exception as e:
+      print("EXCEPTION: ", e)
+      return "error exeception"
+    
+  # add temperatures to room

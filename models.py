@@ -1,5 +1,5 @@
 class Room:
-  def __init__(self, id, name, temperature): # constructor
+  def __init__(self, id, name, temperature=None): # constructor
     self.id = id 
     self.name = name
     self.temperature = temperature

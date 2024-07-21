@@ -7,8 +7,6 @@ from psycopg2.extras import DictCursor
 from flask import Flask, request, jsonify, Blueprint
 from dotenv import load_dotenv
 
-
-
 from services import RoomService
 
 CREATE_ROOMS_TABLE = "CREATE TABLE IF NOT EXISTS rooms (id SERIAL PRIMARY KEY, name TEXT);"
@@ -64,18 +62,23 @@ def get_room(room_id):
 
 @app.post("/api/room")
 def create_room():
-  try:
-    data = request.get_json()
-    name = data["name"]
-    with connection:
-      with connection.cursor() as cursor:
-        cursor.execute(CREATE_ROOMS_TABLE)
-        cursor.execute(INSERT_ROOM_RETURN_ID, (name,))
-        room_id = cursor.fetchone()[0]
-    return {"id": room_id, "message":f"Room {name} created."}, 201
-  except Exception as e:
-    print(e)
-    return
+  data = request.get_json()
+  print('POSTMAN DATA: ', data["name"])
+  new_room = room_service.add_room(data["name"])
+  return jsonify(new_room.dict_format())
+
+#   try:
+#     data = request.get_json()
+#     name = data["name"]
+#     with connection:
+#       with connection.cursor() as cursor:
+#         cursor.execute(CREATE_ROOMS_TABLE)
+#         cursor.execute(INSERT_ROOM_RETURN_ID, (name,))
+#         room_id = cursor.fetchone()[0]
+#     return {"id": room_id, "message":f"Room {name} created."}, 201
+#   except Exception as e:
+#     print(e)
+#     return
   
 # Get all room temperatures
 
