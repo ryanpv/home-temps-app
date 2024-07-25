@@ -47,18 +47,6 @@ def get_room(room_id):
   if room:
     return jsonify(room.dict_format())
   return jsonify({ 'error': 'Room does not exist' }), 404
-  # try:
-  #   with connection:
-  #     with connection.cursor(cursor_factory=DictCursor) as cursor:
-  #       cursor.execute(GET_ROOM_TEMP, (room_id,))
-  #       room = cursor.fetchone()
-        
-  #       print(room['name'], room['temperature'])
-
-  #       return { "room": room }, 200
-  # except ValueError as e:
-  #   print(e)
-  #   return "No room id found"
 
 @app.post("/api/room")
 def create_room():
@@ -67,18 +55,6 @@ def create_room():
   new_room = room_service.add_room(data["name"])
   return jsonify(new_room.dict_format())
 
-#   try:
-#     data = request.get_json()
-#     name = data["name"]
-#     with connection:
-#       with connection.cursor() as cursor:
-#         cursor.execute(CREATE_ROOMS_TABLE)
-#         cursor.execute(INSERT_ROOM_RETURN_ID, (name,))
-#         room_id = cursor.fetchone()[0]
-#     return {"id": room_id, "message":f"Room {name} created."}, 201
-#   except Exception as e:
-#     print(e)
-#     return
   
 # Get all room temperatures
 
@@ -86,28 +62,12 @@ def create_room():
 def get_all_temps():
   rooms = room_service.get_all_rooms()
   return jsonify([room.dict_format() for room in rooms])
-# def get_temps():
-#   try:
-#     with connection:
-#       with connection.cursor() as cursor:
-#         cursor.execute(GET_ALL_TEMPS)
-#         rows = cursor.fetchall()
-#         pprint(rows)
-#     return jsonify({ "temperatures": rows })
-#     # return 'success'
-#   except ValueError as e:
-#     print("GET /api/temperature ERROR:", e)
-#     return { "message": "GET /api/temperature ERROR:" }
-#   except Exception as e:
-#     print("exceptioN: ", e)
-#     return "Exception error"
+
   
 # Add temperatures of rooms
 @app.post("/api/temperature")
 def add_temp():
   data = request.get_json()
-  print('data: ', data)
-  print('request: ', request)
   temperature = data["temperature"]
   room_id = data["room"]
   try:
@@ -115,12 +75,9 @@ def add_temp():
   except KeyError:
     date = datetime.now(timezone.utc)
 
-  with connection:
-    with connection.cursor() as cursor:
-      cursor.execute(CREATE_TEMPS_TABLE)
-      cursor.execute(INSERT_TEMP, (room_id, temperature, date))
-  
-  return { "message": "Temperature added." }, 201
+  temp_added = room_service.add_temp(room_id, temperature, date)
+  return jsonify(temp_added)
+
 
 @app.get('/api/average')
 def get_global_average():

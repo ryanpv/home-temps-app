@@ -1,5 +1,6 @@
 import psycopg2
 from models import Room
+from datetime import datetime, timezone
 
 GET_ALL_TEMPS = """SELECT temperatures.temperature, rooms.*
                     FROM temperatures 
@@ -69,3 +70,8 @@ class RoomService:
       return "error exeception"
     
   # add temperatures to room
+  def add_temp(self, room_id, temperature, date):
+    with self.connection.cursor() as cursor:
+      cursor.execute(INSERT_TEMP, (room_id, temperature, date))
+    self.connection.commit()
+    return { "message": f"Temperature added for room: { room_id }" }
