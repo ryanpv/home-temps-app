@@ -4,15 +4,20 @@ services:
   db:
     image: postgres:14
     environment:
+      POSTGRES_URL: ${DATABASE_URL}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASS}
       POSTGRES_DB: ${DB_NAME}
+    env_file:
+      - .env
     volumes:
-      - \\wsl.localhost\Ubuntu\var\lib\postgresql\14
+      - /mnt/wsl/var/lib/postgresql/14/main:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
       
   web:
     build: .
-    command: flask run --host=0.0.0.0
+    command: flask run
     ports:
       - "5000:5000"
     env_file:
@@ -20,5 +25,5 @@ services:
     depends_on:
       - db
 
-volumes:
-  pgdata:
+# volumes:
+#   postgres_data:

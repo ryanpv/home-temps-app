@@ -17,10 +17,17 @@ GLOBAL_AVG = "SELECT AVG(temperature) as average FROM temperatures;"
 GLOBAL_NUMBER_OF_DAYS = "SELECT COUNT(DISTINCT DATE(date)) AS days FROM temperatures;"
 
 CREATE_ROOMS_TABLE = "CREATE TABLE IF NOT EXISTS rooms (id SERIAL PRIMARY KEY, name TEXT);"
+CREATE_TEMPS_TABLE = """CREATE TABLE IF NOT EXISTS temperatures (room_id INTEGER, temperature REAL,
+                        date TIMESTAMP, FOREIGN KEY(room_id) REFERENCES rooms(id) ON DELETE CASCADE);"""
 
 INSERT_ROOM_RETURN_ID = "INSERT INTO rooms (name) VALUES (%s) RETURNING id;"
 INSERT_TEMP = "INSERT INTO temperatures (room_id, temperature, date) VALUES (%s, %s, %s);"
 
+UPDATE_TEMPERATURE = """UPDATE temperatures 
+                        SET temperature = (%s)
+                        WHERE temperatures.room_id = (%s)
+                        RETURNING room_id;                       
+                        """
 
 
 class RoomService:
@@ -30,12 +37,16 @@ class RoomService:
 
   # list of rooms with their temps
   def get_all_rooms(self):
-    with self.connection.cursor() as cursor:
-      cursor.execute(GET_ALL_TEMPS)
-      rows = cursor.fetchall()
-      print('rows', rows)
+    try:
+      with self.connection.cursor() as cursor:
+        cursor.execute(GET_ALL_TEMPS)
+        rows = cursor.fetchall()
+        print('rows', rows)
 
-    return [Room(*row) for row in rows]
+      return [Room(*row) for row in rows]
+    except Exception as e:
+      print("ERROR FETCHIGN ROOMS /api/temperature", e)
+      return "ERROR FETCHING /api/temperature"
   
   # single room
   def get_room(self, room_id):
@@ -75,3 +86,11 @@ class RoomService:
       cursor.execute(INSERT_TEMP, (room_id, temperature, date))
     self.connection.commit()
     return { "message": f"Temperature added for room: { room_id }" }
+  
+  # update room temperature
+  def update_room_temp(self, temperature, room_id):
+    with self.connection.cursor() as cursor:
+      cursor.execute(UPDATE_TEMPERATURE, (temperature, room_id))
+      updated_room = cursor.fetchone()[0]
+    self.connection.commit()
+    return { "message": f"Updated temperature for room: { updated_room }" }
